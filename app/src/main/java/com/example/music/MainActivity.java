@@ -44,6 +44,7 @@ public class MainActivity extends AppCompatActivity {
     RecyclerViewAdapter recyclerViewAdapter;
     int position = 0;
     SeekBar sb;
+    Pref pref;
     Thread updateSeekBar;
     Button pause, next, previous;
     TextView songNameText;
@@ -84,6 +85,9 @@ public class MainActivity extends AppCompatActivity {
         openPlaylist = findViewById(R.id.openPlaylist);
         checkUserPermission();
 
+        pref = new Pref(MainActivity.this);
+
+
         openPlaylist.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -110,6 +114,8 @@ public class MainActivity extends AppCompatActivity {
         next = (Button) findViewById(R.id.next);
 
         sb = (SeekBar) findViewById(R.id.seekBar);
+
+        position = pref.getPosition();
 
         updateSeekBar = new Thread() {
             @Override
@@ -139,20 +145,31 @@ public class MainActivity extends AppCompatActivity {
         };
 
         if (mp != null) {
-            mp.stop();
-            mp.reset();
-            mp.release();
-        }
-        sname = _songs.get(position).getSongname();
-        songNameText.setText(sname);
-        songNameText.setSelected(true);
-        Uri u = Uri.parse(_songs.get(position).getSongUrl());
-        mp = MediaPlayer.create(this, u);
-        sb.setMax(mp.getDuration());
-        updateSeekBar.start();
-        sb.getProgressDrawable().setColorFilter(getResources().getColor(R.color.colorPrimary), PorterDuff.Mode.MULTIPLY);
-        sb.getThumb().setColorFilter(getResources().getColor(R.color.colorPrimary), PorterDuff.Mode.SRC_IN);
+            if (mp.isPlaying()) {
+                pause.setBackgroundResource(R.drawable.pause);
+            } else {
+                pause.setBackgroundResource(R.drawable.ic_play_arrow_black_24dp);
+            }
 
+            sname = _songs.get(position).getSongname();
+            songNameText.setText(sname);
+            songNameText.setSelected(true);
+
+//            mp.stop();
+//            mp.reset();
+//            mp.release();
+        }
+        if (mp == null) {
+            sname = _songs.get(position).getSongname();
+            songNameText.setText(sname);
+            songNameText.setSelected(true);
+            Uri u = Uri.parse(_songs.get(position).getSongUrl());
+            mp = MediaPlayer.create(this, u);
+            sb.setMax(mp.getDuration());
+            updateSeekBar.start();
+            sb.getProgressDrawable().setColorFilter(getResources().getColor(R.color.colorPrimary), PorterDuff.Mode.MULTIPLY);
+            sb.getThumb().setColorFilter(getResources().getColor(R.color.colorPrimary), PorterDuff.Mode.SRC_IN);
+        }
         sb.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override
             public void onProgressChanged(SeekBar seekBar, int i, boolean b) {
@@ -305,5 +322,11 @@ public class MainActivity extends AppCompatActivity {
             cursor.close();
             songAdapter = new SongAdapter(MainActivity.this, _songs);
         }
+    }
+
+    @Override
+    protected void onStop() {
+        pref.savePosition(position);
+        super.onStop();
     }
 }
